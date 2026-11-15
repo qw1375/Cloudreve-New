@@ -26,18 +26,23 @@ jobs:
       - name: Fetch upstream tags
         run: git fetch --tags "$UPSTREAM_REPO"
 
-      - name: Push missing tags (triggers release.yml)
+      # 关键：不直接重放上游 tag 对象。上游 tag 指向的提交里 .goreleaser.yaml
+      # 把 release owner 硬编码为 Dark-CC，直接重放会导致 goreleaser 发版 403。
+      # 改为在本地 master HEAD（已同步上游代码 + 本地定制修复）上创建同名 tag。
+      - name: Create missing tags on local master
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
           for tag in $(git tag --list 'v*' | sort -V); do
-            # 上游有而本地 origin 没有的 tag，先确保 tag 指向的提交在本地 master 历史中
+            # 上游有而本地 origin 没有的 tag，先确保上游提交已同步进本地 master
             if ! git ls-remote --tags origin | grep -q "refs/tags/$tag$"; then
               if git merge-base --is-ancestor "$tag^{commit}" origin/master; then
-                echo "推送新 tag: $tag"
-                git push origin "$tag"
+                echo "在 master HEAD 上创建并推送 tag: $tag"
+                git tag -f "$tag" origin/master
+                git push origin "refs/tags/$tag"
               else
-                echo "跳过 $tag：对应提交尚未同步进 master（等分支同步后下一轮处理）"
+                echo "跳过 $tag：上游提交尚未同步进 master（等分支同步后下一轮处理）"
               fi
             fi
           done
