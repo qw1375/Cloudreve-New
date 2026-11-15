@@ -1,0 +1,43 @@
+# .github/workflows/sync-tags.yml
+# 跟随上游 tag 发版：检测上游新 tag -> 在本地重放 -> 触发既有 release.yml 构建镜像
+name: Sync Upstream Tags
+
+on:
+  schedule:
+    - cron: "23 3 * * *"   # 每天检查上游新 tag（在分支同步之后运行）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  UPSTREAM_REPO: https://github.com/Dark-CC/Cloudreve-New.git
+
+jobs:
+  sync-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      - name: Fetch upstream tags
+        run: git fetch --tags "$UPSTREAM_REPO"
+
+      - name: Push missing tags (triggers release.yml)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for tag in $(git tag --list 'v*' | sort -V); do
+            # 上游有而本地 origin 没有的 tag，先确保 tag 指向的提交在本地 master 历史中
+            if ! git ls-remote --tags origin | grep -q "refs/tags/$tag$"; then
+              if git merge-base --is-ancestor "$tag^{commit}" origin/master; then
+                echo "推送新 tag: $tag"
+                git push origin "$tag"
+              else
+                echo "跳过 $tag：对应提交尚未同步进 master（等分支同步后下一轮处理）"
+              fi
+            fi
+          done
