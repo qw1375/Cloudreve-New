@@ -74,7 +74,7 @@ changelog:
 
 release:
   github:
-    owner: Dark-CC
+    owner: qw1375
     name: Cloudreve-New
   draft: false
   prerelease: auto
