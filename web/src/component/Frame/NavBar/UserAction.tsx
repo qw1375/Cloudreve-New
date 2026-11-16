@@ -19,10 +19,11 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { GroupPermission } from "../../../api/user.ts";
 import { useAppDispatch } from "../../../redux/hooks.ts";
-import { signout } from "../../../redux/thunks/session.ts";
+import { signout, refreshUserSession } from "../../../redux/thunks/session.ts";
 import SessionManager, { Session } from "../../../session";
 import { GroupBS } from "../../../session/utils.ts";
 import UserAvatar from "../../Common/User/UserAvatar.tsx";
+import SessionList from "../../Common/User/SessionList.tsx";
 import { SquareMenuItem } from "../../FileManager/ContextMenu/ContextMenu.tsx";
 import HomeOutlined from "../../Icons/HomeOutlined.tsx";
 import Person from "../../Icons/Person.tsx";
@@ -53,6 +54,25 @@ const UserPopover = ({ open, onClose, ...rest }: PopoverProps) => {
   const signWithHint = (email: string) => {
     navigate("/session?phase=email&email=" + encodeURIComponent(email));
   };
+
+  const switchSession = useCallback(
+    (session: Session) => {
+      onClose && onClose({}, "escapeKeyDown");
+      dispatch(refreshUserSession(session, null));
+      window.location.reload();
+    },
+    [dispatch, onClose],
+  );
+
+  const loginWithOtherAccount = useCallback(() => {
+    onClose && onClose({}, "escapeKeyDown");
+    navigate("/session?phase=email");
+  }, [navigate, onClose]);
+
+  const onAllSessionRemoved = useCallback(() => {
+    onClose && onClose({}, "escapeKeyDown");
+    navigate("/session");
+  }, [navigate, onClose]);
 
   const signOut = useCallback(() => {
     dispatch(signout());
@@ -111,6 +131,25 @@ const UserPopover = ({ open, onClose, ...rest }: PopoverProps) => {
         <StyledTypography variant={"caption"} color={"textSecondary"}>
           {user.email}
         </StyledTypography>
+      </Box>
+      <Divider />
+      <Box
+        sx={{
+          px: "8px",
+          maxWidth: "300px",
+          maxHeight: "200px",
+          width: "100%",
+          overflowY: "auto",
+        }}
+      >
+        <SessionList
+          current={user}
+          variant="list"
+          switchSession={switchSession}
+          loginWithHint={signWithHint}
+          onAllSessionRemoved={onAllSessionRemoved}
+          onLoginWithOtherAccount={loginWithOtherAccount}
+        />
       </Box>
       <Divider />
       <MenuList dense sx={{ mx: 0.5 }}>

@@ -65,8 +65,8 @@ export const UserSettingsDefault: { [key: string]: any } = {
   [UserSettings.UploadOverwrite]: false,
   [UserSettings.TimeZone]: "Asia/Shanghai",
   [UserSettings.TreeViewAutoExpand]: true,
+  [UserSettings.NotifyStoragePolicyChange]: false,
   [UserSettings.FolderClickAction]: "open",
-  [UserSettings.NotifyStoragePolicyChange]: true,
 };
 
 export interface Session extends LoginResponse {
@@ -121,8 +121,10 @@ export class Manager {
     const session = this.state.sessions[userHint];
     const isValidSession = session && !session.signedOut && !dayjs(session.token.refresh_expires).isBefore(dayjs());
 
-    if (isValidSession && this.state.current === userHint) {
-      // Remove user_hint from URL without causing a page reload
+    if (isValidSession) {
+      // Switch current session to the hinted user before cleaning up the URL
+      this.state.current = userHint;
+      this.syncToStore();
       window.history.replaceState({}, "", cleanPath);
     } else {
       // No valid session found, redirect to login/session page
@@ -196,6 +198,17 @@ export class Manager {
     }
 
     return this.state.sessions[this.state.current];
+  };
+
+  // Return all sessions, marking expired ones as signed out.
+  public validSession = (): Session[] => {
+    return Object.keys(this.state.sessions).map((uid) => {
+      const session = this.state.sessions[uid];
+      return {
+        ...session,
+        signedOut: session.signedOut ? true : dayjs(session.token.refresh_expires).isBefore(dayjs()),
+      };
+    });
   };
 
   public upsert = (session: LoginResponse) => {

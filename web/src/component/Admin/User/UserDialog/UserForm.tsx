@@ -240,13 +240,7 @@ const UserForm = ({ reload, setLoading }: { reload: () => void; setLoading: (loa
               <NoMarginHelperText>{t("user.originUserGroupDes")}</NoMarginHelperText>
             </SettingForm>
             <SettingForm title={t("user.groupExpired")} noContainer lgWidth={6}>
-              <DenseFilledTextField
-                fullWidth
-                type="date"
-                value={(values.group_expires ?? "").slice(0, 10)}
-                onChange={onGroupExpiresChange}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+              <DenseFilledTextField fullWidth value={values.group_expires ?? ""} onChange={onGroupExpiresChange} />
               <NoMarginHelperText>{t("user.groupExpiredDes")}</NoMarginHelperText>
             </SettingForm>
             <SettingForm title={t("user.createdAt")} noContainer lgWidth={6}>

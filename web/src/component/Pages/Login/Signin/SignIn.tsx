@@ -24,6 +24,7 @@ import SessionManager, { Session } from "../../../../session/index.ts";
 import { useQuery } from "../../../../util";
 import { CaptchaParams } from "../../../Common/Captcha/Captcha.tsx";
 import { DefaultCloseAction } from "../../../Common/Snackbar/snackbar.tsx";
+import SessionList from "../../../Common/User/SessionList.tsx";
 import DismissCircleFilled from "../../../Icons/DismissCircleFilled.tsx";
 import Phase2FA from "../Phases/Phase2FA.tsx";
 import PhaseCollectEmail from "../Phases/PhaseCollectEmail.tsx";
@@ -43,6 +44,7 @@ enum EmailLoginPhase {
   Collect2FA,
   ForgetPassword,
   Consent,
+  SelectAccount,
 }
 
 export interface Control {
@@ -96,6 +98,7 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
   const captchaState = useRef<CaptchaParams>();
   const twoFaSession = useRef<string>("");
   const [loginOptions, setLoginOptions] = useState<PrepareLoginResponse>();
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
 
   // OAuth-specific state
   const [oauthError, setOauthError] = useState<string | null>(null);
@@ -282,6 +285,17 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
     [dispatch, setPhase, setCaptchaGen, setLoading, isOAuthFlow, handleOAuthSessionSwitch, query],
   );
 
+  const switchSession = useCallback(
+    async (session: Session | LoginResponse) => {
+      if (isOAuthFlow) {
+        await handleOAuthSessionSwitch(session);
+      } else {
+        dispatch(refreshUserSession(session, query.get("redirect")));
+      }
+    },
+    [dispatch, handleOAuthSessionSwitch, isOAuthFlow, query],
+  );
+
   const submit = (e?: FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     switch (phase) {
@@ -321,6 +335,16 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
         if (SessionManager.currentLoginOrNull()) {
           await checkAndProceed(registration);
         }
+        return;
+      }
+
+      if (query.get("phase") == "email") {
+        return;
+      }
+
+      if (SessionManager.validSession().length > 0) {
+        setPhase(EmailLoginPhase.SelectAccount);
+        setShowAccountSwitcher(true);
       }
     };
     init();
@@ -348,7 +372,8 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
         phaseSetting = {
           title: t("login.siginToYourAccount"),
           nextButtonText: t("login.continue"),
-          showBackButton: false,
+          showBackButton: showAccountSwitcher,
+          previous: EmailLoginPhase.SelectAccount,
         };
         break;
       case EmailLoginPhase.SignupNeeded:
@@ -389,6 +414,13 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
           nextButtonText: t("oauth.authorize"),
           showBackButton: true,
           previous: EmailLoginPhase.CollectEmail,
+        };
+        break;
+      case EmailLoginPhase.SelectAccount:
+        phaseSetting = {
+          title: t("login.selectAccountToUse"),
+          nextButtonText: t("login.signIn"),
+          showBackButton: false,
         };
         break;
       default:
@@ -511,6 +543,20 @@ const EmailLogin = ({ oauthConsent }: SignInProps) => {
                   captchaGen={captchaGen}
                   setCaptchaState={(s) => (captchaState.current = s)}
                   control={phaseConfig.control}
+                />
+              )}
+              {phase === EmailLoginPhase.SelectAccount && (
+                <SessionList
+                  switchSession={switchSession}
+                  loginWithHint={(hint) => {
+                    setEmail(hint);
+                    setPhase(EmailLoginPhase.CollectEmail);
+                  }}
+                  onAllSessionRemoved={() => setPhase(EmailLoginPhase.CollectEmail)}
+                  onLoginWithOtherAccount={() => {
+                    setEmail("");
+                    setPhase(EmailLoginPhase.CollectEmail);
+                  }}
                 />
               )}
             </Box>

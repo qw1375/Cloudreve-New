@@ -102,7 +102,7 @@ const UserAvatar = memo(
     );
 
     const avatarUrl = useMemo(() => {
-      if (loadedUser?.avatar) {
+      if (loadedUser) {
         return ApiPrefix + `/user/avatar/${loadedUser.id}${cacheKey ? `?nocache=1&key=${cacheKey ?? 0}` : ""}`;
       }
       return undefined;

@@ -93,6 +93,7 @@ tsc.out.txt
 .pro-*.json
 .pack-assets*
 extracted-pro/
+pro-runtime/
 *.pro.bin
 .quarantine/
 .ce-*.txt

@@ -125,8 +125,7 @@ release:
       ghcr.io/dark-cc/cloudreve-new:{{ .Version }}
     ```
 
-    多架构镜像（`linux/amd64`、`linux/arm64`）由独立的 Docker 工作流构建，
-    通常在 Release 发布后数十分钟内可用。
+    多架构镜像（`linux/amd64`、`linux/arm64`）与本 Release 由同一工作流构建并推送。
 
     ## 文档
 
@@ -141,5 +140,5 @@ release:
     - 不包含、不分发、不反编译任何 Pro 版本的二进制、前端产物或授权逻辑。
     - 遵循 GPL-3.0，对应源码：[{{ .Tag }}](https://github.com/Dark-CC/Cloudreve-New/tree/{{ .Tag }})
 
-# Docker images are built by .github/workflows/docker.yml so a release does not
-# fail when the registry is unavailable.
+# The container image is published by the `docker` job of the same release
+# workflow, so a tag push produces both the archives and the multi-arch image.

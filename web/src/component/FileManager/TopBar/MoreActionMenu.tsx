@@ -27,7 +27,6 @@ import {
 } from "../../../redux/thunks/filemanager.ts";
 import { queueLoadShareInfo } from "../../../redux/thunks/share.ts";
 import SessionManager from "../../../session";
-import { GroupPermission } from "../../../api/user.ts";
 import Boolset from "../../../util/boolset.ts";
 import CrUri, { Filesystem } from "../../../util/uri.ts";
 import { DefaultCloseAction } from "../../Common/Snackbar/snackbar.tsx";
@@ -43,6 +42,7 @@ import StorageOutlined from "../../Icons/StorageOutlined.tsx";
 import WarningOutlined from "../../Icons/WarningOutlined.tsx";
 import { CascadingSubmenu } from "../ContextMenu/CascadingMenu.tsx";
 import { DenseDivider, SquareMenu, SquareMenuItem } from "../ContextMenu/ContextMenu.tsx";
+import { FileManagerIndex } from "../FileManager.tsx";
 import { FmIndexContext } from "../FmIndexContext.tsx";
 
 const MoreActionMenu = ({ onClose, ...rest }: MenuProps) => {
@@ -57,24 +57,20 @@ const MoreActionMenu = ({ onClose, ...rest }: MenuProps) => {
   const { enqueueSnackbar } = useSnackbar();
   const list = useAppSelector((state) => state.fileManager[fmIndex].list);
   const policyOptions = useAppSelector((state) => state.globalState.policyOptionCache);
-  const canSwitchPolicy = useMemo(
-    () => SessionManager.currentUserGroupPermission().enabled(GroupPermission.relocate),
-    [],
-  );
   const canMount = useMemo(() => {
-    if (!canSwitchPolicy || !list?.props?.capability || list.single_file_view) {
+    if (!list?.props?.capability || list.single_file_view) {
       return false;
     }
     return new Boolset(list.props.capability).enabled(NavigatorCapability.mount);
-  }, [canSwitchPolicy, list?.props?.capability, list?.single_file_view]);
+  }, [list?.props?.capability, list?.single_file_view]);
   const isOwner = !!list?.parent?.owned;
   const currentPolicyID = list?.storage_policy?.id;
 
   useEffect(() => {
-    if (isLogin && canMount && isOwner && !policyOptions) {
+    if (isMobile && isLogin && !policyOptions) {
       dispatch(loadPolicyOptions()).catch(() => undefined);
     }
-  }, [canMount, dispatch, isLogin, isOwner, policyOptions]);
+  }, [dispatch, isLogin, isMobile, policyOptions]);
 
   const onPinClicked = useCallback(() => {
     dispatch(pinCurrentView(fmIndex));
@@ -160,6 +156,69 @@ const MoreActionMenu = ({ onClose, ...rest }: MenuProps) => {
             </ListItemIcon>
             <ListItemText>{t("application:fileManager.refresh")}</ListItemText>
           </SquareMenuItem>
+          {fmIndex == FileManagerIndex.main && (
+            <CascadingSubmenu
+              title={t("application:vas.switchFolderPolicy")}
+              popupId="mountPolicy"
+              icon={<StorageOutlined fontSize="small" />}
+            >
+              {!canMount && (
+                <SquareMenuItem disabled>
+                  <ListItemIcon>
+                    <WarningOutlined fontSize="small" />
+                  </ListItemIcon>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("application:fileManager.noActionsCanBeDone")}
+                  </Typography>
+                </SquareMenuItem>
+              )}
+              {canMount && !isOwner && (
+                <SquareMenuItem disabled>
+                  <Stack sx={{ px: 1, py: 0.5 }}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {t("application:uploader.storagePolicy")}
+                    </Typography>
+                    <Typography variant="body2">{list?.storage_policy?.name ?? "-"}</Typography>
+                    <Divider sx={{ my: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {t("application:fileManager.mountOwner")}
+                    </Typography>
+                  </Stack>
+                </SquareMenuItem>
+              )}
+              {canMount &&
+                isOwner &&
+                (policyOptions ?? []).map((policy) => (
+                  <SquareMenuItem key={policy.id} onClick={() => onMountClicked(policy)}>
+                    {policy.id === currentPolicyID && (
+                      <ListItemIcon>
+                        <Checkmark fontSize="small" />
+                      </ListItemIcon>
+                    )}
+                    <ListItemText inset={policy.id !== currentPolicyID}>
+                      <Typography variant="body2" sx={{ whiteSpace: "normal" }}>
+                        {policy.name}
+                      </Typography>
+                    </ListItemText>
+                  </SquareMenuItem>
+                ))}
+              {canMount && isOwner && (!policyOptions || policyOptions.length === 0) && (
+                <>
+                  <SquareMenuItem disabled>
+                    <ListItemText inset>
+                      <Skeleton variant="text" width={100} />
+                    </ListItemText>
+                  </SquareMenuItem>
+                  <SquareMenuItem disabled>
+                    <ListItemText inset>
+                      <Skeleton variant="text" width={100} />
+                    </ListItemText>
+                  </SquareMenuItem>
+                </>
+              )}
+            </CascadingSubmenu>
+          )}
+          <DenseDivider />
         </>
       )}
       {isLogin && (
@@ -178,65 +237,15 @@ const MoreActionMenu = ({ onClose, ...rest }: MenuProps) => {
             </ListItemIcon>
             <ListItemText>{t("application:fileManager.saveShortcut")}</ListItemText>
           </SquareMenuItem>
-          <SquareMenuItem onClick={onReportClicked}>
-            <ListItemIcon>
-              <WarningOutlined fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>{t("application:vas.report")}</ListItemText>
-          </SquareMenuItem>
         </>
       )}
-      {isMobile && isLogin && canMount && <DenseDivider />}
-      {isMobile && canMount && (
-        <CascadingSubmenu
-          title={t("application:vas.switchFolderPolicy")}
-          popupId="mountPolicy"
-          icon={<StorageOutlined fontSize="small" />}
-        >
-          {isOwner &&
-            (policyOptions ?? []).map((policy) => (
-              <SquareMenuItem key={policy.id} onClick={() => onMountClicked(policy)}>
-                {policy.id === currentPolicyID && (
-                  <ListItemIcon>
-                    <Checkmark fontSize="small" />
-                  </ListItemIcon>
-                )}
-                <ListItemText inset={policy.id !== currentPolicyID}>
-                  <Typography variant="body2" sx={{ whiteSpace: "normal" }}>
-                    {policy.name}
-                  </Typography>
-                </ListItemText>
-              </SquareMenuItem>
-            ))}
-          {isOwner && (!policyOptions || policyOptions.length === 0) && (
-            <>
-              <SquareMenuItem disabled>
-                <ListItemText inset>
-                  <Skeleton variant="text" width={100} />
-                </ListItemText>
-              </SquareMenuItem>
-              <SquareMenuItem disabled>
-                <ListItemText inset>
-                  <Skeleton variant="text" width={100} />
-                </ListItemText>
-              </SquareMenuItem>
-            </>
-          )}
-          {!isOwner && (
-            <SquareMenuItem disabled>
-              <Stack sx={{ px: 1 }}>
-                <Typography variant="body2" fontWeight={600}>
-                  {t("application:uploader.storagePolicy")}
-                </Typography>
-                <Typography variant="body2">{list?.storage_policy?.name ?? "-"}</Typography>
-                <Divider sx={{ my: 0.5 }} />
-                <Typography variant="body2" color="text.secondary">
-                  {t("application:fileManager.mountOwner")}
-                </Typography>
-              </Stack>
-            </SquareMenuItem>
-          )}
-        </CascadingSubmenu>
+      {fs == Filesystem.share && (
+        <SquareMenuItem onClick={onReportClicked}>
+          <ListItemIcon>
+            <WarningOutlined fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t("application:vas.report")}</ListItemText>
+        </SquareMenuItem>
       )}
       {(isLogin || fs == Filesystem.share) && <DenseDivider />}
       <SquareMenuItem onClick={onSelectAllClicked}>
