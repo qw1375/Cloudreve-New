@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true \
 
 COPY web/ ./
 
-ARG VERSION=4.19.1
+ARG VERSION=4.19.2
 ENV CR_NAME=cloudreve-frontend \
     CR_VERSION=${VERSION} \
     npm_package_name=cloudreve-frontend \
@@ -55,7 +55,7 @@ RUN mkdir -p application/statics/stage/assets \
  && cd /src \
  && rm -rf application/statics/stage
 
-ARG VERSION=4.19.1
+ARG VERSION=4.19.2
 ARG COMMIT=unknown
 
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath \

@@ -5,7 +5,6 @@ import {
   styled,
   Table,
   TableBody,
-  TableCell,
   TableContainer,
   TableHead,
   TableRow,
@@ -15,6 +14,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { getStoragePacks } from "../../../api/api.ts";
 import { StoragePack } from "../../../api/dashboard.ts";
 import { Capacity, UserSettings } from "../../../api/user.ts";
@@ -22,7 +22,9 @@ import { useAppDispatch, useAppSelector } from "../../../redux/hooks.ts";
 import { updateUserCapacity } from "../../../redux/thunks/filemanager.ts";
 import { loadSiteConfig } from "../../../redux/thunks/site.ts";
 import { sizeToString } from "../../../util";
+import { NoWrapTableCell, SecondaryButton } from "../../Common/StyledComponents.tsx";
 import TimeBadge from "../../Common/TimeBadge.tsx";
+import StorageOutlined from "../../Icons/StorageOutlined.tsx";
 import SettingForm from "./SettingForm.tsx";
 
 export const StorageBar = styled(Box)(({ theme }) => ({
@@ -49,6 +51,13 @@ export const StorageBlock = styled(Box)(() => ({
   marginRight: "5px",
 }));
 
+// Same as Pro: the packs table is a flat surface with a divider border instead
+// of the default elevated Paper shadow.
+const PacksTableContainer = styled(Paper)(({ theme }) => ({
+  boxShadow: "none",
+  border: `1px solid ${theme.palette.divider}`,
+}));
+
 export interface StorageSettingProps {
   setting: UserSettings;
 }
@@ -70,8 +79,7 @@ export const CapacityBar = ({ capacity, forceRow }: { capacity?: Capacity; force
       pack: 0,
     };
 
-    if (!capacity || capacity.total <= 0) {
-      setStorageBreakdown(summary);
+    if (!capacity) {
       return;
     }
 
@@ -161,7 +169,9 @@ export const CapacityBar = ({ capacity, forceRow }: { capacity?: Capacity; force
 const StorageSetting = ({ setting }: StorageSettingProps) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const capacity = useAppSelector((state) => state.fileManager[0].capacity);
+  const storageProducts = useAppSelector((state) => state.siteConfig.vas.config?.storage_products);
   const [packs, setPacks] = useState<StoragePack[] | undefined>(setting.storage_packs);
 
   useEffect(() => {
@@ -177,42 +187,52 @@ const StorageSetting = ({ setting }: StorageSettingProps) => {
       <SettingForm title={t("vas.quota")}>
         <Box sx={{ mt: 1 }}>
           <CapacityBar capacity={capacity} />
+          {storageProducts && storageProducts.length > 0 && (
+            <SecondaryButton
+              sx={{ mt: 1 }}
+              onClick={() => navigate("/shop?tab=storage")}
+              variant="contained"
+              startIcon={<StorageOutlined />}
+            >
+              {t("vas.buyStorage")}
+            </SecondaryButton>
+          )}
         </Box>
       </SettingForm>
       <SettingForm title={t("vas.validStorage")}>
-        <TableContainer sx={{ mt: 1 }} component={Paper}>
-          <Table size="small">
+        <TableContainer sx={{ mt: 1 }} component={PacksTableContainer}>
+          <Table sx={{ width: "100%" }} size="small">
             <TableHead>
               <TableRow>
-                <TableCell>{t("fileManager.name")}</TableCell>
-                <TableCell>{t("fileManager.size")}</TableCell>
-                <TableCell>{t("vas.activationDate")}</TableCell>
-                <TableCell>{t("vas.expiredAt")}</TableCell>
+                <NoWrapTableCell>{t("fileManager.name")}</NoWrapTableCell>
+                <NoWrapTableCell>{t("fileManager.size")}</NoWrapTableCell>
+                <NoWrapTableCell>{t("vas.activationDate")}</NoWrapTableCell>
+                <NoWrapTableCell>{t("vas.expiredAt")}</NoWrapTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {packs?.map((pack) => (
-                <TableRow key={pack.id} hover>
-                  <TableCell>{pack.name}</TableCell>
-                  <TableCell>{sizeToString(pack.size)}</TableCell>
-                  <TableCell>
+                <TableRow key={pack.id} hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                  <NoWrapTableCell>{pack.name}</NoWrapTableCell>
+                  <NoWrapTableCell>{sizeToString(pack.size)}</NoWrapTableCell>
+                  <NoWrapTableCell>
                     <TimeBadge datetime={pack.active_since ?? ""} variant="inherit" />
-                  </TableCell>
-                  <TableCell>
+                  </NoWrapTableCell>
+                  <NoWrapTableCell>
                     <TimeBadge datetime={pack.expire_at ?? ""} variant="inherit" />
-                  </TableCell>
+                  </NoWrapTableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          {!setting.storage_packs && (
+            <Box sx={{ p: 1, width: "100%", textAlign: "center" }}>
+              <Typography variant="caption" color="text.secondary">
+                {t("application:setting.listEmpty")}
+              </Typography>
+            </Box>
+          )}
         </TableContainer>
-        {(!packs || packs.length === 0) && (
-          <Box sx={{ p: 1, width: "100%", textAlign: "center" }}>
-            <Typography variant="caption" color="text.secondary">
-              {t("application:setting.listEmpty")}
-            </Typography>
-          </Box>
-        )}
       </SettingForm>
     </Stack>
   );

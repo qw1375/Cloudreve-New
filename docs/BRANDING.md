@@ -28,7 +28,7 @@ Cloudreve-New 允许在不改代码的前提下调整对外展示的链接。
 后端版本由 `-ldflags` 注入：
 
 ```bash
--X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion=4.19.1'
+-X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion=4.19.2'
 ```
 
 前端 `version.json` 中的 `version` 必须与之完全一致，否则启动日志会提示

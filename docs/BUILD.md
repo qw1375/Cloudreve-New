@@ -11,13 +11,13 @@
 ```bash
 cd web
 pnpm install
-npm_package_name=cloudreve-frontend npm_package_version=4.19.1 pnpm build
+npm_package_name=cloudreve-frontend npm_package_version=4.19.2 pnpm build
 ```
 
 产品在 `web/build/`，其中 `version.json` 应为：
 
 ```json
-{"name":"cloudreve-frontend","version":"4.19.1"}
+{"name":"cloudreve-frontend","version":"4.19.2"}
 ```
 
 ## 2. 打包静态资源
@@ -47,7 +47,7 @@ assets/build/assets/...
 cd src
 CGO_ENABLED=0 go build -trimpath \
   -ldflags "-s -w \
-    -X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion=4.19.1' \
+    -X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion=4.19.2' \
     -X 'github.com/cloudreve/Cloudreve/v4/application/constants.LastCommit=$(git rev-parse --short HEAD)' \
     -X 'github.com/cloudreve/Cloudreve/v4/application/constants.IsPro=false'" \
   -o ../cloudreve .
@@ -82,7 +82,7 @@ cd src
 goreleaser build --snapshot --clean
 ```
 
-正式发布由 `.github/workflows/release.yml` 完成：推送形如 `v4.19.1` 的 tag 后，
+正式发布由 `.github/workflows/release.yml` 完成：推送形如 `v4.19.2` 的 tag 后，
 工作流会先构建前端并打包 `assets.zip`，再调用 goreleaser 生成 Release，
 同时构建并推送多架构容器镜像到 `ghcr.io/dark-cc/cloudreve-new`。
 
@@ -92,8 +92,8 @@ goreleaser build --snapshot --clean
 ## 发版流程
 
 ```bash
-git tag v4.19.3
-git push origin v4.19.3
+git tag v4.19.2
+git push origin v4.19.2
 ```
 
 若需要重跑某个已存在的 tag，可在 Actions 页面手动触发 `release` 工作流，

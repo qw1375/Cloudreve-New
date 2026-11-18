@@ -61,7 +61,7 @@ sha256sum -c checksums.txt --ignore-missing
 无需额外运行时依赖：
 
 ```bash
-tar -xzf cloudreve_4.19.1_linux_amd64.tar.gz
+tar -xzf cloudreve_4.19.2_linux_amd64.tar.gz
 chmod +x cloudreve
 ./cloudreve -c data/conf.ini server
 ```

@@ -28,7 +28,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { defaultOpts, send } from "../../../../api/request";
 import { useAppDispatch } from "../../../../redux/hooks";
-import { DenseFilledTextField } from "../../../Common/StyledComponents";
+import { DenseFilledTextField, SecondaryButton } from "../../../Common/StyledComponents";
 import GroupSelectionInput from "../../Common/GroupSelectionInput";
 import { SettingContext } from "../SettingWrapper";
 
@@ -442,23 +442,6 @@ const SSOSettings = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-        <Button variant="contained" startIcon={<Add />} {...bindTrigger(addProviderPopup)}>
-          {t("fileManager.add", { ns: "application" })}
-        </Button>
-        <Menu
-          onClose={closeAddProviderPopup}
-          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-          transformOrigin={{ vertical: "top", horizontal: "left" }}
-          {...addProviderMenuProps}
-        >
-          {(["qq", "logto", "oidc"] as ProviderType[]).map((type) => (
-            <MenuItem key={type} onClick={() => addProvider(type)}>
-              {providerTypeLabel(type, t)}
-            </MenuItem>
-          ))}
-        </Menu>
-      </Box>
       {hydrated && providers.providers.length === 0 && (
         <Typography variant="body2" color="text.secondary" />
       )}
@@ -664,13 +647,13 @@ const SSOSettings = () => {
               <>
                 <FormControl fullWidth>
                   <Typography variant="body2">{t("settings.oidcWellknown")}</Typography>
-                  <Button
+                  <SecondaryButton
                     variant="contained"
                     sx={{ mb: 1, alignSelf: "flex-start" }}
                     onClick={() => setWellknownImportOpen(provider.id)}
                   >
                     {t("settings.importFromWellknown")}
-                  </Button>
+                  </SecondaryButton>
                   <TextField
                     fullWidth
                     multiline
@@ -782,6 +765,23 @@ const SSOSettings = () => {
           </AccordionDetails>
         </StyledAccordion>
       ))}
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <SecondaryButton variant="contained" startIcon={<Add />} {...bindTrigger(addProviderPopup)}>
+          {t("fileManager.add", { ns: "application" })}
+        </SecondaryButton>
+        <Menu
+          onClose={closeAddProviderPopup}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          {...addProviderMenuProps}
+        >
+          {(["qq", "logto", "oidc"] as ProviderType[]).map((type) => (
+            <MenuItem key={type} onClick={() => addProvider(type)}>
+              {providerTypeLabel(type, t)}
+            </MenuItem>
+          ))}
+        </Menu>
+      </Box>
       <Dialog
         open={wellknownImportOpen !== undefined}
         onClose={() => setWellknownImportOpen(undefined)}
